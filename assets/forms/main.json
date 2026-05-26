@@ -1,0 +1,12 @@
+{
+    "title": "§b星空菜单",
+    "content": "选择你需要的功能~",
+    "buttons": {
+        "传送&textures/items/ender_pearl.png": ["openform 传送"],
+        "公会&textures/ui/dressing_room_skins.png": ["guild"],
+        "经济&textures/items/emerald.png": ["openform 经济"],
+        "领地&textures/ui/icon_recipe_nature.png": ["territory"],
+        "设置&textures/ui/settings_glyph_color_2x.png": ["openform 设置"],
+        "其他&textures/ui/MashupIcon.png": ["openform 其他"]
+    }
+}

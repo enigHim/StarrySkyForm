@@ -1,0 +1,4 @@
+#pragma once
+
+#define STARRY_SKY_FORM_VERSION "${VERSION}"
+#define STARRY_SKY_FORM_COMMIT_SHA "${GIT_COMMIT}"
