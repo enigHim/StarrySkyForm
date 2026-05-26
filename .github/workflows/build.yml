@@ -22,30 +22,25 @@ jobs:
         with:
           xmake-version: latest
 
-      - name: Configure XMake
-        run: xmake f -y -m release
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: xmake f -y -m release --vs_runtime=MD
 
       - name: Build
-        run: xmake -y
+        run: xmake -y -v
 
       - name: Package
+        shell: pwsh
         run: |
-          mkdir -p release/StarrySkyForm
-          cp -r assets/* release/StarrySkyForm/
-          cp bin/StarrySkyForm/*.dll release/StarrySkyForm/
-          cp README.md release/StarrySkyForm/
-        shell: bash
+          New-Item -ItemType Directory -Force -Path release/StarrySkyForm
+          Copy-Item -Path assets/* -Destination release/StarrySkyForm/ -Recurse -Force
+          Copy-Item -Path bin/StarrySkyForm/*.dll -Destination release/StarrySkyForm/ -Force
+          Copy-Item -Path README.md -Destination release/StarrySkyForm/ -Force
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StarrySkyForm-${{ github.sha }}
+          name: StarrySkyForm
           path: release/StarrySkyForm/
-
-      - name: Create Release
-        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release/StarrySkyForm/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
