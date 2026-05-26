@@ -25,22 +25,44 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Check tools
+        shell: cmd
+        run: |
+          echo "Checking xmake..."
+          xmake --version
+          echo "Checking cl..."
+          cl 2>&1 || echo "cl not found"
+          echo "Checking git..."
+          git --version
+
       - name: Configure
-        run: xmake f -y -m release --vs_runtime=MD
+        shell: cmd
+        run: |
+          xmake f -y -m release --vs_runtime=MD -vD 2>&1
 
       - name: Build
-        run: xmake -y -v
+        shell: cmd
+        run: |
+          xmake -y -vD 2>&1
 
       - name: Package
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path release/StarrySkyForm
-          Copy-Item -Path assets/* -Destination release/StarrySkyForm/ -Recurse -Force
-          Copy-Item -Path bin/StarrySkyForm/*.dll -Destination release/StarrySkyForm/ -Force
-          Copy-Item -Path README.md -Destination release/StarrySkyForm/ -Force
+          if (Test-Path bin/StarrySkyForm/*.dll) {
+            New-Item -ItemType Directory -Force -Path release/StarrySkyForm
+            Copy-Item -Path assets/* -Destination release/StarrySkyForm/ -Recurse -Force
+            Copy-Item -Path bin/StarrySkyForm/*.dll -Destination release/StarrySkyForm/ -Force
+            Copy-Item -Path README.md -Destination release/StarrySkyForm/ -Force
+          } else {
+            echo "No DLL found, checking bin directory..."
+            Get-ChildItem -Path bin -Recurse
+          }
 
       - name: Upload Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: StarrySkyForm
-          path: release/StarrySkyForm/
+          name: StarrySkyForm-build
+          path: |
+            bin/
+            release/
