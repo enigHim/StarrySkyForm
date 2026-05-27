@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone LeviLamina SDK
+        run: |
+          git clone --depth 1 https://github.com/LiteLDev/LeviLamina.git levilamina-sdk
+
       - name: Setup XMake
         uses: xmake-io/github-action-setup-xmake@v1
         with:
@@ -25,44 +29,31 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Check tools
-        shell: cmd
+      - name: Configure with local SDK
+        env:
+          LEVILAMINA_SDK_DIR: ${{ github.workspace }}/levilamina-sdk
         run: |
-          echo "Checking xmake..."
-          xmake --version
-          echo "Checking cl..."
-          cl 2>&1 || echo "cl not found"
-          echo "Checking git..."
-          git --version
-
-      - name: Configure
-        shell: cmd
-        run: |
-          xmake f -y -m release --vs_runtime=MD -vD 2>&1
+          xmake f -y -m release --sdk=${{ github.workspace }}/levilamina-sdk
 
       - name: Build
-        shell: cmd
+        run: xmake -y
+
+      - name: List Output
+        shell: pwsh
         run: |
-          xmake -y -vD 2>&1
+          Get-ChildItem -Path bin -Recurse -ErrorAction SilentlyContinue
 
       - name: Package
         shell: pwsh
         run: |
-          if (Test-Path bin/StarrySkyForm/*.dll) {
-            New-Item -ItemType Directory -Force -Path release/StarrySkyForm
-            Copy-Item -Path assets/* -Destination release/StarrySkyForm/ -Recurse -Force
-            Copy-Item -Path bin/StarrySkyForm/*.dll -Destination release/StarrySkyForm/ -Force
-            Copy-Item -Path README.md -Destination release/StarrySkyForm/ -Force
-          } else {
-            echo "No DLL found, checking bin directory..."
-            Get-ChildItem -Path bin -Recurse
-          }
+          New-Item -ItemType Directory -Force -Path release/StarrySkyForm
+          Copy-Item -Path assets/* -Destination release/StarrySkyForm/ -Recurse -Force
+          $dll = Get-ChildItem -Path bin -Filter "StarrySkyForm.dll" -Recurse | Select-Object -First 1
+          if ($dll) { Copy-Item -Path $dll.FullName -Destination release/StarrySkyForm/ }
+          Copy-Item -Path README.md -Destination release/StarrySkyForm/
 
       - name: Upload Artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: StarrySkyForm-build
-          path: |
-            bin/
-            release/
+          name: StarrySkyForm
+          path: release/StarrySkyForm/
