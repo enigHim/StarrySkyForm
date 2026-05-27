@@ -1,49 +1,39 @@
-name: Build StarrySkyForm
-
 on:
-  push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
+  push:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-
+    strategy:
+      matrix:
+        target_type:
+          - server
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+
+      - uses: actions/cache@v5
         with:
-          fetch-depth: 0
+          path: |
+            ~/AppData/Local/.xmake
+          key: xmake-${{ hashFiles('xmake.lua') }}
+          restore-keys: |
+            xmake-
 
-      - name: Clone LeviLamina SDK
-        run: |
-          git clone --depth 1 https://github.com/LiteLDev/LeviLamina.git levilamina-sdk
+      - run: |
+          xmake repo -u
 
-      - name: Setup XMake
-        uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: latest
+      - run: |
+          xmake f -a x64 -m release -p windows -v --target_type=${{ matrix.target_type }} -y
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Configure with local SDK
-        env:
-          LEVILAMINA_SDK_DIR: ${{ github.workspace }}/levilamina-sdk
-        run: |
-          xmake f -y -m release --sdk=${{ github.workspace }}/levilamina-sdk
-
-      - name: Build
-        run: xmake -y
-
-      - name: List Output
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path bin -Recurse -ErrorAction SilentlyContinue
+      - run: |
+          xmake -v -y
 
       - name: Package
+        if: matrix.target_type == 'server'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release/StarrySkyForm
@@ -52,8 +42,8 @@ jobs:
           if ($dll) { Copy-Item -Path $dll.FullName -Destination release/StarrySkyForm/ }
           Copy-Item -Path README.md -Destination release/StarrySkyForm/
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
-          name: StarrySkyForm
-          path: release/StarrySkyForm/
+          name: StarrySkyForm-${{ github.sha }}-${{ matrix.target_type }}-windows-x64
+          path: |
+            release/
